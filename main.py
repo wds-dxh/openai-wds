@@ -24,6 +24,21 @@ def print_help():
     print("set_truncate <mode>: 设置截断模式 (sliding/clear)")
     print("================\n")
 
+def process_stream_response(response_stream):
+    """处理流式响应"""
+    full_response = ""
+    for response in response_stream:
+        if "error" in response:
+            print(f"\n错误: {response['error']}")
+            return
+        
+        if response["type"] == "content":
+            print(response["content"], end="", flush=True)
+            full_response += response["content"]
+        elif response["type"] == "done":
+            print()  # 换行
+            return full_response
+
 def main():
     assistant = create_assistant()
     user_id = "test_user"
@@ -31,6 +46,10 @@ def main():
     print("欢迎使用AI助手！输入'help'查看命令列表，输入'exit'或'quit'退出。")
     print(f"当前角色: {assistant.get_current_role()}")
     print_help()
+    
+    # 设置角色
+    assistant.set_role("儿童心理专家")
+    print(f"当前角色: {assistant.get_current_role()}")
     
     while True:
         try:
@@ -53,7 +72,7 @@ def main():
                 print(f"消息数量: {summary['message_count']}")
                 print(f"是否有上下文: {'是' if summary['has_context'] else '否'}")
                 print(f"当前角色: {summary.get('current_role', 'default')}")
-                print(f"当前对话轮数: {summary['current_turns']}/{summary['max_turns']}")
+                print(f"当前��话轮数: {summary['current_turns']}/{summary['max_turns']}")
                 if summary['has_context']:
                     print(f"最后更新时间: {summary['last_message_time']}")
                 print("==================")
@@ -108,17 +127,14 @@ def main():
                 continue
             
             time_now = time.time()
-            # 发送消息并获取回复
-            response = assistant.chat(user_id, user_input)
+            
+            # 使用流式接口
+            print("\nAI: ", end="", flush=True)
+            response_stream = assistant.chat_stream(user_id, user_input)
+            process_stream_response(response_stream)
             
             # 输出回复的延迟
             print(f"回复延迟: {time.time() - time_now:.2f}秒")
-            if "error" in response:
-                print(f"\n错误: {response['error']}")
-                if "timeout" in response['error'].lower():
-                    print("连接超时，请重试...")
-            else:
-                print(f"\nAI ({response['current_role']}): {response['response']}")
                 
         except KeyboardInterrupt:
             print("\n\n程序被中断。再见！")

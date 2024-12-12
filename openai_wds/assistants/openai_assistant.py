@@ -289,3 +289,93 @@ class OpenAIAssistant(LLMBase):
             # 保留system消息和最近的max_turns轮对话
             preserved_messages_count = self.max_turns * 2  # 每轮2条消息
             return [context[0]] + context[-preserved_messages_count:]
+
+    def chat_stream(self, user_id: str, message: str, role_type: Optional[str] = None):
+        """
+        流式处理用户消息
+        Args:
+            user_id: 用户ID
+            message: 用户消息
+            role_type: 指定的角色类型，如果为None则使用当前角色
+        Yields:
+            生成的文本片段
+        """
+        try:
+            # 如果指定了新的角色类型，就更新当前角色
+            if role_type and role_type != self.current_role:
+                if not self.set_role(role_type):
+                    yield {
+                        "error": f"无效的角色类型: {role_type}",
+                        "timestamp": datetime.now().isoformat()
+                    }
+                    return
+
+            # 获取当前角色的提示词
+            system_prompt = self.load_prompt(self.current_role)
+            
+            # 获取或初始化用户的上下文
+            if user_id not in self.conversation_context:
+                self.conversation_context[user_id] = [{"role": "system", "content": system_prompt}]
+            else:
+                if self.conversation_context[user_id][0]["role"] == "system":
+                    self.conversation_context[user_id][0]["content"] = system_prompt
+                else:
+                    self.conversation_context[user_id].insert(0, {"role": "system", "content": system_prompt})
+            
+            # 在添加新消息前检查并截断上下文
+            if user_id in self.conversation_context:
+                self.conversation_context[user_id] = self._truncate_context(
+                    self.conversation_context[user_id]
+                )
+            
+            # 添加用户消息
+            self.conversation_context[user_id].append({"role": "user", "content": message})
+            
+            # 创建流式请求
+            stream = self.client.chat.completions.create(
+                model=self.config['openai']['model'],
+                messages=self.conversation_context[user_id],
+                temperature=self.config['openai'].get('temperature', 0.7),
+                max_tokens=self.config['openai'].get('max_tokens', 1000),
+                top_p=self.config['openai'].get('top_p', 1.0),
+                stream=True  # 启用流式传输
+            )
+
+            # 用于累积完整的响应
+            full_response = ""
+            
+            # 逐个产出流式响应
+            for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    content = chunk.choices[0].delta.content
+                    full_response += content
+                    yield {
+                        "content": content,
+                        "type": "content",
+                        "timestamp": datetime.now().isoformat(),
+                        "current_role": self.current_role
+                    }
+
+            # 保存完整的对话到上下文
+            self.conversation_context[user_id].append(
+                {"role": "assistant", "content": full_response}
+            )
+            
+            # 保存对话历史
+            self.save_conversation(user_id, self.conversation_context[user_id])
+            
+            # 发送完成标记
+            yield {
+                "type": "done",
+                "timestamp": datetime.now().isoformat(),
+                "current_role": self.current_role
+            }
+            
+        except Exception as e:
+            print(f"Stream chat error: {str(e)}")
+            yield {
+                "error": str(e),
+                "type": "error",
+                "timestamp": datetime.now().isoformat(),
+                "current_role": self.current_role
+            }

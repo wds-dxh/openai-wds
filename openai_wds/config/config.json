@@ -1,8 +1,8 @@
 {
     "openai": {
         "api_key": "${OPENAI_API_KEY}",
-        "base_url": "https://api.chatanywhere.tech",
-        "model": "gpt-3.5-turbo",
+        "base_url": "http://127.0.0.1:11434/v1",
+        "model": "qwen2.5:0.5b",
         "temperature": 0.7,
         "max_tokens": 1000,
         "top_p": 1.0,
