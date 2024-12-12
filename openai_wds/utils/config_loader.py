@@ -1,3 +1,10 @@
+'''
+Author: wds-Ubuntu22-cqu wdsnpshy@163.com
+Date: 2024-12-12 16:40:07
+Description: 
+邮箱：wdsnpshy@163.com 
+Copyright (c) 2024 by ${wds-Ubuntu22-cqu}, All Rights Reserved. 
+'''
 import os
 import json
 from typing import Dict, Any
@@ -26,11 +33,11 @@ class ConfigLoader:
         # 替换环境变量
         config['openai']['api_key'] = os.getenv('OPENAI_API_KEY')
         
-        # 确保存储路径存在
-        for path_key in ['conversations_path', 'prompts_path']:
-            data_dir = os.path.dirname(config['storage'][path_key])
-            if not os.path.exists(data_dir):
-                os.makedirs(data_dir)
+        # # 确保存储路径存在
+        # for path_key in ['conversations_path', 'prompts_path']:
+        #     data_dir = os.path.dirname(config['storage'][path_key])
+        #     if not os.path.exists(data_dir):
+        #         os.makedirs(data_dir)
                 
         return config
     
