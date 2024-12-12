@@ -9,11 +9,11 @@
         "timeout": 60
     },
     "storage": {
-        "conversations_path": "./data/conversations.json",
-        "prompts_path": "./data/prompts.json"
+        "conversations_path": "../data/conversations.json",
+        "prompts_path": "../data/prompts.json"
     },
     "conversation": {
         "max_turns": 10,
         "truncate_mode": "sliding"
     }
-} 
+}

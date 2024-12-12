@@ -5,8 +5,10 @@ Description:
 邮箱：wdsnpshy@163.com 
 Copyright (c) 2024 by ${wds-Ubuntu22-cqu}, All Rights Reserved. 
 '''
+import os
 import time
-from openai_wds import create_assistant  # 使用新的导入路径
+from openai_wds import create_assistant
+from examples.create_config import create_default_config
 import sys
 
 def print_help():
@@ -39,17 +41,33 @@ def process_stream_response(response_stream):
             print()  # 换行
             return full_response
 
+def setup_environment():
+    """设置环境"""
+    # 检查配置文件是否存在，不存在则创建
+    config_dir = os.path.join(os.getcwd(), 'config')
+    config_path = os.path.join(config_dir, 'config.json')
+    
+    if not os.path.exists(config_path):
+        print("未找到配置文件，创建默认配置...")
+        create_default_config()
+    
+    return config_path
+
 def main():
-    assistant = create_assistant()
+    # 设置环境并获取配置文件路径
+    config_path = setup_environment()
+    
+    # 使用配置文件创建助手
+    assistant = create_assistant(config_path)
     user_id = "test_user"
     
     print("欢迎使用AI助手！输入'help'查看命令列表，输入'exit'或'quit'退出。")
     print(f"当前角色: {assistant.get_current_role()}")
     print_help()
     
-    # 设置角色
+    # 设置默认角色
     assistant.set_role("儿童心理专家")
-    print(f"当前角色: {assistant.get_current_role()}")
+    print(f"已切换到角色: {assistant.get_current_role()}")
     
     while True:
         try:
@@ -72,7 +90,7 @@ def main():
                 print(f"消息数量: {summary['message_count']}")
                 print(f"是否有上下文: {'是' if summary['has_context'] else '否'}")
                 print(f"当前角色: {summary.get('current_role', 'default')}")
-                print(f"当前��话轮数: {summary['current_turns']}/{summary['max_turns']}")
+                print(f"当前对话轮数: {summary['current_turns']}/{summary['max_turns']}")
                 if summary['has_context']:
                     print(f"最后更新时间: {summary['last_message_time']}")
                 print("==================")
@@ -115,7 +133,7 @@ def main():
                 except ValueError:
                     print("请输入有效的数字")
                 continue
-            elif user_input.lower().startswith('set_truncate '):  # 设置截断模式，sliding:滑动截断，clear:清除截断
+            elif user_input.lower().startswith('set_truncate '):  # 设置截断模式
                 mode = user_input.split(' ')[1].strip()
                 if mode not in ['sliding', 'clear']:
                     print("无效的截断模式，请使用 'sliding' 或 'clear'")

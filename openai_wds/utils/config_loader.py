@@ -11,7 +11,12 @@ from typing import Dict, Any
 from dotenv import load_dotenv
 
 class ConfigLoader:
-    def __init__(self, config_path: str = "config/config.json"):
+    def __init__(self, config_path: str):
+        """
+        初始化配置加载器
+        Args:
+            config_path: 配置文件的完整路径
+        """
         self.config_path = config_path
         load_dotenv()
         self.config = self._load_config()
@@ -33,11 +38,13 @@ class ConfigLoader:
         # 替换环境变量
         config['openai']['api_key'] = os.getenv('OPENAI_API_KEY')
         
-        # # 确保存储路径存在
-        # for path_key in ['conversations_path', 'prompts_path']:
-        #     data_dir = os.path.dirname(config['storage'][path_key])
-        #     if not os.path.exists(data_dir):
-        #         os.makedirs(data_dir)
+        # 确保存储路径是相对于配置文件的路径
+        config_dir = os.path.dirname(self.config_path)
+        for path_key in ['conversations_path', 'prompts_path']:
+            if not os.path.isabs(config['storage'][path_key]):
+                config['storage'][path_key] = os.path.normpath(
+                    os.path.join(config_dir, config['storage'][path_key])
+                )
                 
         return config
     
