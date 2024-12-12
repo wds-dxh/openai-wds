@@ -15,7 +15,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
     requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
 
 setup(
-    name="openai-wds",
+    name="openai-wds-chat",
     version="0.1.0",
     author="wds-Ubuntu22-cqu",
     author_email="wdsnpshy@163.com",
@@ -40,7 +40,7 @@ setup(
     install_requires=requirements,
     include_package_data=True,
     package_data={
-        'openai_wds': [
+        'openai_wds_chat': [
             'config/*.json',
             'data/*.json',
         ],
