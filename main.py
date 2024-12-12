@@ -6,7 +6,7 @@ Description:
 Copyright (c) 2024 by ${wds-Ubuntu22-cqu}, All Rights Reserved. 
 '''
 import time
-from src.assistants.openai_assistant import OpenAIAssistant
+from openai_wds import create_assistant  # 使用新的导入路径
 import sys
 
 def print_help():
@@ -25,7 +25,7 @@ def print_help():
     print("================\n")
 
 def main():
-    assistant = OpenAIAssistant()
+    assistant = create_assistant()
     user_id = "test_user"
     
     print("欢迎使用AI助手！输入'help'查看命令列表，输入'exit'或'quit'退出。")
@@ -37,17 +37,17 @@ def main():
             user_input = input("\n您: ").strip()
             
             # 处理特殊命令
-            if user_input.lower() in ['exit', 'quit']:
+            if user_input.lower() in ['exit', 'quit']:  # 退出程序
                 print("再见！")
                 sys.exit(0)
-            elif user_input.lower() == 'help':
+            elif user_input.lower() == 'help':  # 打印帮助信息
                 print_help()
                 continue
-            elif user_input.lower() == 'clear':
+            elif user_input.lower() == 'clear':  # 清除对话历史
                 assistant.clear_context(user_id)
                 print("对话历史已清除！")
                 continue
-            elif user_input.lower() == 'context':
+            elif user_input.lower() == 'context':  # 显示当前对话信息
                 summary = assistant.get_context_summary(user_id)
                 print("\n=== 当前对话信息 ===")
                 print(f"消息数量: {summary['message_count']}")
@@ -58,23 +58,23 @@ def main():
                     print(f"最后更新时间: {summary['last_message_time']}")
                 print("==================")
                 continue
-            elif user_input.lower() == 'role':
+            elif user_input.lower() == 'role':  # 显示当前角色
                 print(f"当前角色: {assistant.get_current_role()}")
                 continue
-            elif user_input.lower() == 'roles':
+            elif user_input.lower() == 'roles':  # 显示所有可用角色
                 roles = assistant.list_available_roles()
                 print("\n可用角色:")
                 for role in roles:
                     print(f"- {role}")
                 continue
-            elif user_input.lower().startswith('role '):
+            elif user_input.lower().startswith('role '):  # 切换角色
                 new_role = user_input.split(' ')[1].strip()
                 if assistant.set_role(new_role):
                     print(f"已切换到角色: {new_role}")
                 else:
                     print(f"切换角色失败: {new_role} 不是有效的角色类型")
                 continue
-            elif user_input.lower() == 'history':
+            elif user_input.lower() == 'history':  # 显示历史对话
                 history = assistant.get_conversation_history(user_id)
                 print("\n=== 历史对话 ===")
                 for conv in history:
@@ -85,7 +85,7 @@ def main():
                             print(f"{prefix}{msg['content']}")
                 print("\n==============")
                 continue
-            elif user_input.lower().startswith('set_turns '):
+            elif user_input.lower().startswith('set_turns '):  # 设置最大对话轮数
                 try:
                     turns = int(user_input.split(' ')[1])
                     if turns < 1:
@@ -96,7 +96,7 @@ def main():
                 except ValueError:
                     print("请输入有效的数字")
                 continue
-            elif user_input.lower().startswith('set_truncate '):
+            elif user_input.lower().startswith('set_truncate '):  # 设置截断模式，sliding:滑动截断，clear:清除截断
                 mode = user_input.split(' ')[1].strip()
                 if mode not in ['sliding', 'clear']:
                     print("无效的截断模式，请使用 'sliding' 或 'clear'")
@@ -104,7 +104,7 @@ def main():
                     assistant.update_settings({"truncate_mode": mode})
                     print(f"已设置截断模式为: {mode}")
                 continue
-            elif not user_input:
+            elif not user_input:  # 如果用户输入为空，则跳过 
                 continue
             
             time_now = time.time()
@@ -112,7 +112,7 @@ def main():
             response = assistant.chat(user_id, user_input)
             
             # 输出回复的延迟
-            print(f"回复延迟: {time.time() - time_now}")
+            print(f"回复延迟: {time.time() - time_now:.2f}秒")
             if "error" in response:
                 print(f"\n错误: {response['error']}")
                 if "timeout" in response['error'].lower():

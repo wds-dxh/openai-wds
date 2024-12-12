@@ -1,6 +1,5 @@
+include openai_wds/config/*.json
+include openai_wds/data/*.json
 include README.md
 include requirements.txt
-include LICENSE
-recursive-include src/config *.json
-recursive-include src/data *.json
-recursive-include src *.py 
+include LICENSE 

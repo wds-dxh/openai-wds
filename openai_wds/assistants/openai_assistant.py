@@ -6,11 +6,14 @@ from datetime import datetime
 from dotenv import load_dotenv
 from openai import OpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
-from src.base.llm_base import LLMBase
-from src.utils.config_loader import ConfigLoader
+from ..base.llm_base import LLMBase
+from ..utils.config_loader import ConfigLoader
 
 class OpenAIAssistant(LLMBase):
-    def __init__(self, config_path: str = "config/config.json"):
+    def __init__(self, config_path=None):
+        if config_path is None:
+            config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                     'config', 'config.json')
         self.config_loader = ConfigLoader(config_path)
         self.config = self.config_loader.get_config()
         self.client = None
@@ -80,7 +83,7 @@ class OpenAIAssistant(LLMBase):
             if user_id not in self.conversation_context:
                 self.conversation_context[user_id] = [{"role": "system", "content": system_prompt}]
             else:
-                # 更���system message如果角色改变了
+                # 更新system message如果角色改变了
                 if self.conversation_context[user_id][0]["role"] == "system":
                     self.conversation_context[user_id][0]["content"] = system_prompt
                 else:
@@ -126,7 +129,9 @@ class OpenAIAssistant(LLMBase):
     
     def _load_prompts(self) -> Dict[str, str]:
         """加载提示词模板"""
-        with open(self.config['storage']['prompts_path'], 'r', encoding='utf-8') as f:
+        prompts_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                   'data', 'prompts.json')
+        with open(prompts_path, 'r', encoding='utf-8') as f:
             return json.load(f)
             
     def load_prompt(self, prompt_name: str) -> str:
@@ -159,24 +164,26 @@ class OpenAIAssistant(LLMBase):
     '''    
     def save_conversation(self, user_id: str, conversation: List[Dict]) -> None:
         """保存对话历史到JSON文件"""
+        conversations_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                        'data', 'conversations.json')
         try:
-            with open(self.config['storage']['conversations_path'], 'r+', encoding='utf-8') as f:
+            with open(conversations_path, 'r+', encoding='utf-8') as f:
                 try:
                     conversations = json.load(f)
                 except json.JSONDecodeError:
                     conversations = {}
                     
-                conversations[user_id] = conversations.get(user_id, []) + [{    # 将新的对话历史添加到现有对话历史中
+                conversations[user_id] = conversations.get(user_id, []) + [{
                     "timestamp": datetime.now().isoformat(),
                     "messages": conversation
                 }]
                 
                 f.seek(0)
                 json.dump(conversations, f, ensure_ascii=False, indent=2)
-                f.truncate() # 截断文件
+                f.truncate()
                 
         except FileNotFoundError:
-            with open(self.config['storage']['conversations_path'], 'w', encoding='utf-8') as f:
+            with open(conversations_path, 'w', encoding='utf-8') as f:
                 json.dump({user_id: [{
                     "timestamp": datetime.now().isoformat(),
                     "messages": conversation
@@ -184,8 +191,10 @@ class OpenAIAssistant(LLMBase):
                 
     def get_conversation_history(self, user_id: str) -> List[Dict]:
         """获取用户对话历史"""
+        conversations_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                        'data', 'conversations.json')
         try:
-            with open(self.config['storage']['conversations_path'], 'r', encoding='utf-8') as f:
+            with open(conversations_path, 'r', encoding='utf-8') as f:
                 conversations = json.load(f)
                 return conversations.get(user_id, [])
         except FileNotFoundError:
