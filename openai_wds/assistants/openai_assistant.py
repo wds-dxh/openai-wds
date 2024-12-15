@@ -180,6 +180,8 @@ class OpenAIAssistant(LLMBase):
     '''    
     def save_conversation(self, user_id: str, conversation: List[Dict]) -> None:
         """保存对话历史到JSON文件"""
+        # 提取conversation中的后面两个消息
+        conversation = conversation[-2:]
         conversations_path = self.config['storage']['conversations_path']
         try:
             os.makedirs(os.path.dirname(conversations_path), exist_ok=True)
